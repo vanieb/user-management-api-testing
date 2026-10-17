@@ -58,7 +58,7 @@ The User Management API collection was executed using Postman Collection Runner 
 
 ### Execution Evidence
 
-![Postman Collection Runner Results](execution-results/collection-run-summary.png)
+![Postman Collection Runner Results](collection-run-summary.png)
 
 ### Summary
 
