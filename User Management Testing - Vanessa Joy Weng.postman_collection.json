@@ -1,0 +1,649 @@
+{
+  "info": {
+    "_postman_id": "3c5702f8-e7d7-4b3d-940c-c820300a63dd",
+    "name": "User Management Testing | Vanessa Joy Weng",
+    "description": "# User Management API Testing — Postman\n\n**Author:** Vanessa Joy Weng  \n**API under test:** [DummyJSON Users API](https://dummyjson.com/docs/users)  \n**Tool:** Postman  \n**Authentication:** No Auth  \n**Coverage:** 12 test cases across 5 folders  \n**Execution status:** Test cases prepared; record actual run results separately.\n\n## Overview\n\nThis collection demonstrates functional and negative API testing of user management endpoints using Postman. It covers retrieving users, pagination, search, field selection, and simulated create, update, and delete operations. Assertions validate HTTP status codes, response structure, data types, request/response consistency, and expected non-persistence of simulated changes.\n\n## Collection Structure\n\n| Folder | Test Cases | Coverage |\n| --- | --- | --- |\n| **01 - Get Users** | TC-001–TC-005 | Retrieve users, retrieve by ID, pagination, keyword search, selected fields |\n| **02 - Create User** | TC-006–TC-007 | Simulated user creation and non-persistence verification |\n| **03 - Update User** | TC-008–TC-009 | Simulated PATCH update and non-persistence verification |\n| **04 - Delete User** | TC-010–TC-011 | Simulated deletion and verification that the user remains retrievable |\n| **05 - Negative Testing** | TC-012 | Error handling for a nonexistent user ID |\n\n## Getting Started\n\n1. Import the exported Postman collection JSON into Postman, or open this collection in your workspace.\n    \n2. Confirm the collection variable `baseUrl` is set to `https://dummyjson.com`.\n    \n3. No API key or access token is required for these public endpoints.\n    \n4. Run the requests **in order**, especially where a later test depends on data saved by an earlier one.\n    \n5. Review the **Test Results** for each request, or use the Collection Runner to inspect the complete run.\n    \n\n## Test Data and Dependencies\n\n- **TC-002** retrieves user ID `testUserId` and saves `baselineFirstName` and `baselineLastName` for update-related tests.\n    \n- **TC-006** saves `simulatedUserId` from the creation response; **TC-007** uses that ID to verify the created record was not persisted.\n    \n- **TC-008** uses `baselineFirstName` to verify that an unrelated field remains unchanged.\n    \n- **TC-009** uses `baselineLastName` to verify that the simulated update was not persisted. Run TC-008 before TC-009.\n    \n- **TC-010** and **TC-011** should use the same user ID, with TC-010 executed first.\n    \n- Requests with missing prerequisites may be skipped by their pre-request scripts; a skipped request is **not** a passing assertion.\n    \n\n## Important API Behavior\n\nDummyJSON simulates create, update, and delete operations. A successful mutation response does **not** mean that the underlying user data has been permanently changed. The follow-up GET requests intentionally validate this behavior.\n\n## Execution Guidance\n\nUse the Postman Collection Runner with **1 iteration**. A **500 ms delay** between requests is an optional pacing setting, not an API requirement. Run the complete collection in order, inspect assertion results and skipped requests, and record the actual execution date, passed/failed/skipped counts, and any defects or observations.\n\n## Reference\n\n[DummyJSON Users API documentation](https://dummyjson.com/docs/users)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58997796",
+    "_collection_link": "https://go.postman.co/collection/58997796-3c5702f8-e7d7-4b3d-940c-c820300a63dd?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 - Get Users",
+      "item": [
+        {
+          "name": "TC-001 Retrieve 5 users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst requestedLimit = Number(pm.request.url.query.get(\"limit\"));\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User list structure\npm.test(\"Verify users field is an array\", () => {\n    pm.expect(body.users).to.be.an(\"array\");\n});\n\n// Test 3: User count\npm.test(\"Verify returned user count matches requested limit\", () => {\n    pm.expect(body.users.length).to.eql(requestedLimit);\n});\n\n// Test 4: Total records metadata\npm.test(\"Verify total records field is numeric\", () => {\n    pm.expect(body.total).to.be.a(\"number\");\n});\n\n// Test 5: Pagination limit\npm.test(\"Verify pagination limit matches requested limit\", () => {\n    pm.expect(body.limit).to.eql(requestedLimit);\n});\n\n// Test 6: Default pagination offset\npm.test(\"Verify default pagination offset equals 0\", () => {\n    pm.expect(body.skip).to.eql(0);\n});\n\n// Test 7: User ID validation\npm.test(\"Verify all user IDs are positive integers\", () => {\n    body.users.forEach(user => {\n        pm.expect(user.id).to.be.a(\"number\");\n        pm.expect(Number.isInteger(user.id)).to.be.true;\n        pm.expect(user.id).to.be.above(0);\n    });\n});\n\n// Test 8: First name validation\npm.test(\"Verify all firstName fields are strings\", () => {\n    body.users.forEach(user => {\n        pm.expect(user.firstName).to.be.a(\"string\");\n    });\n});\n\n// Test 9: Last name validation\npm.test(\"Verify all lastName fields are strings\", () => {\n    body.users.forEach(user => {\n        pm.expect(user.lastName).to.be.a(\"string\");\n    });\n});\n\n// Save ID of first user for Retrieving user by user id, updating and deleting user \npm.collectionVariables.set(\"testUserId\", body.users[0].id);\n\n"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unset test user ID\npm.collectionVariables.unset(\"testUserId\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "## TC-001 Retrieve 5 Users\n\nSends a GET request to the `/users` endpoint with a `limit=5` query parameter to retrieve a paginated list of 5 users.\n\n### Endpoint\n\n`GET {{baseUrl}}/users?limit=5`\n\n### Query Parameters\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `limit` | `5` | Limits the number of users returned in the response. |\n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `users` — an array of user objects (length equal to the requested limit)\n        \n    - `total` — total number of users available (numeric)\n        \n    - `limit` — the pagination limit applied (matches requested limit)\n        \n    - `skip` — the pagination offset (defaults to `0`)\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. `users` field is an array\n    \n3. Returned user count matches the requested limit (`5`)\n    \n4. `total` field is a number\n    \n5. `limit` in response matches the requested limit\n    \n6. Default `skip` (offset) equals `0`\n    \n7. All user `id` values are positive integers\n    \n8. All `firstName` fields are strings\n    \n9. All `lastName` fields are strings"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-002 Retrieve user by ID and save data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const user = pm.response.json();\nconst requestedUserId = pm.collectionVariables.get(\"testUserId\");\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User ID validation\npm.test(\"Verify user ID is a positive integer\", () => {\n    pm.expect(user.id).to.be.a(\"number\");\n    pm.expect(Number.isInteger(user.id)).to.be.true;\n    pm.expect(user.id).to.be.above(0);\n});\n\n// Test 3: First name validation\npm.test(\"Verify firstName is a non-empty string\", () => {\n    pm.expect(user.firstName).to.be.a(\"string\").and.not.empty;\n});\n\n// Test 4: Last name validation\npm.test(\"Verify lastName is a non-empty string\", () => {\n    pm.expect(user.lastName).to.be.a(\"string\").and.not.empty;\n});\n\n// Test 5: Requested user validation\npm.test(\"Verify returned user ID matches requested ID\", () => {\n    pm.expect(user.id).to.eql(requestedUserId);\n});\n\n// Save baseline values for subsequent test cases\nif (pm.response.code === 200 && user.id === requestedUserId) {\n    pm.collectionVariables.set(\"baselineFirstName\", user.firstName);\n    pm.collectionVariables.set(\"baselineLastName\", user.lastName);\n}"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Clear previous baseline values\npm.collectionVariables.unset(\"baselineFirstName\");\npm.collectionVariables.unset(\"baselineLastName\");\n\nconst testUserId = pm.collectionVariables.get(\"testUserId\");\n\nif (!testUserId) {\n    console.warn(\"BLOCKED: Run TC-001 first to save testUserId.\");\n    pm.execution.skipRequest();\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{testUserId}}"
+                }
+              ]
+            },
+            "description": "# TC-002 Retrieve User by ID and Save Data\n\nSends a GET request to the `/users/:id` endpoint to retrieve a specific user by ID and save the user's first and last names as collection variables for subsequent test cases.\n\n### Endpoint\n\n`GET {{baseUrl}}/users/:id`\n\n### Path Variables\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `id` | `{{testUserId}}` | Specifies the ID of the user to retrieve. |\n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `id` — the requested user's ID (positive integer)\n        \n    - `firstName` — the user's first name (non-empty string)\n        \n    - `lastName` — the user's last name (non-empty string)\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. User `id` is a positive integer\n    \n3. `firstName` is a non-empty string\n    \n4. `lastName` is a non-empty string\n    \n5. Returned user `id` matches the requested ID (`{{testUserId}}`)\n    \n\n### Collection Variables\n\nWhen the response is successful and the returned user ID matches the requested ID, the following collection variables are saved:\n\n| Variable | Description |\n| --- | --- |\n| `baselineFirstName` | Stores the user's original first name for subsequent validation. |\n| `baselineLastName` | Stores the user's original last name for subsequent validation. |\n\nThese variables are used by TC-008 and TC-009 to verify simulated updates and data persistence behavior."
+          },
+          "response": []
+        },
+        {
+          "name": "TC-003 Retrieve Users with Pagination (Limit 5, Skip 5)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\n\n// Get pagination values from the request query parameters\nconst requestedLimit = Number(pm.request.url.query.get(\"limit\"));\nconst requestedSkip = Number(pm.request.url.query.get(\"skip\"));\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User list structure\npm.test(\"Verify users field is an array\", () => {\n    pm.expect(body.users).to.be.an(\"array\");\n});\n\n// Test 3: User count\npm.test(\"Verify returned user count respects requested limit\", () => {\n    pm.expect(body.users.length).to.be.at.most(requestedLimit);\n});\n\n// Test 4: Pagination limit\npm.test(\"Verify pagination limit matches requested limit\", () => {\n    pm.expect(body.limit).to.eql(requestedLimit);\n});\n\n// Test 5: Pagination offset\npm.test(\"Verify pagination offset matches requested skip\", () => {\n    pm.expect(body.skip).to.eql(requestedSkip);\n});\n\n// Test 6: Expected page size\n// Verify a full page is returned when enough records remain.\npm.test(\"Verify expected number of users is returned\", () => {\n    const remainingUsers = Math.max(0, body.total - requestedSkip);\n    const expectedCount = Math.min(requestedLimit, remainingUsers);\n    pm.expect(body.users.length).to.eql(expectedCount);\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?limit=5&skip=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Maximum number of users to retrieve"
+                },
+                {
+                  "key": "skip",
+                  "value": "5",
+                  "description": "Number of records to skip"
+                }
+              ]
+            },
+            "description": "# TC-003 Retrieve Users with Pagination (Limit 5, Skip 5)\n\nSends a GET request to the `/users` endpoint with `limit=5` and `skip=5` query parameters to retrieve a paginated list of users, skipping the first 5 records.\n\n### Endpoint\n\n`GET {{baseUrl}}/users?limit=5&skip=5`\n\n### Query Parameters\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `limit` | `5` | Limits the maximum number of users returned in the response. |\n| `skip` | `5` | Specifies the number of user records to skip. |\n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `users` — an array of user objects (up to the requested limit)\n        \n    - `total` — total number of users available\n        \n    - `limit` — the pagination limit applied (matches requested limit)\n        \n    - `skip` — the pagination offset applied (matches requested skip)\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. `users` field is an array\n    \n3. Returned user count does not exceed the requested limit (`5`)\n    \n4. `limit` in response matches the requested limit (`5`)\n    \n5. `skip` in response matches the requested offset (`5`)\n    \n6. Returned user count matches the expected page size based on the total available records, requested limit, and skip value\n    \n\n### Notes\n\nThe expected number of returned users is calculated using the available records after applying the offset.\n\nThis test validates pagination metadata and page size. It does not independently verify the identities or ordering of the skipped records."
+          },
+          "response": []
+        },
+        {
+          "name": "TC-004 Search Users by Keyword",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: Search results structure\npm.test(\"Verify users field is an array\", () => {\n    pm.expect(body.users).to.be.an(\"array\");\n});\n\n// Test 3: Search results are not empty\npm.test(\"Verify search results are not empty\", () => {\n    pm.expect(body.users).to.not.be.empty;\n});\n\n// Test 4: Known user validation\npm.test(\"Verify search results include user with ID 1\", () => {\n    pm.expect(\n        body.users.some(user => user.id === 1)\n    ).to.be.true;\n});\n\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/search?q=Emily",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Emily"
+                }
+              ]
+            },
+            "description": "# TC-004 Search Users by Keyword\n\nSends a GET request to the `/users/search` endpoint with a `q=Emily` query parameter to retrieve users matching the specified search keyword.\n\n### Endpoint\n\n`GET {{baseUrl}}/users/search?q=Emily`\n\n### Query Parameters\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `q` | `Emily` | Specifies the keyword used to search for users. |\n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `users` — an array of user objects matching the search criteria\n        \n    - At least one matching user record\n        \n    - A user record with `id=1`, based on the known test data\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. `users` field is an array\n    \n3. Search results are not empty\n    \n4. Search results include the expected user with ID `1`"
+          },
+          "response": []
+        },
+        {
+          "name": "TC-005 Retrieve 3 users with selected fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\nconst body = pm.response.json();\n\n// Get query parameters from the request\nconst requestedLimit = Number(pm.request.url.query.get(\"limit\"));\nconst requestedFields = pm.request.url.query.get(\"select\")\n    .split(\",\")\n    .map(field => field.trim());\n\n// Include id, which is returned by the API by default\nconst expectedFields = [...new Set([\"id\", ...requestedFields])].sort();\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User list structure\npm.test(\"Verify users field is an array\", () => {\n    pm.expect(body.users).to.be.an(\"array\");\n});\n\n// Test 3: User count\npm.test(\"Verify returned user count matches requested limit\", () => {\n    pm.expect(body.users.length).to.eql(requestedLimit);\n});\n\n// Test 4: Selected fields validation\npm.test(\"Verify each user contains only the expected fields\", () => {\n    body.users.forEach(user => {\n        pm.expect(Object.keys(user).sort()).to.eql(expectedFields);\n    });\n});\n\n// Test 5: User ID validation\npm.test(\"Verify all user IDs are positive integers\", () => {\n    body.users.forEach(user => {\n        pm.expect(user.id).to.be.a(\"number\");\n        pm.expect(Number.isInteger(user.id)).to.be.true;\n        pm.expect(user.id).to.be.above(0);\n    });\n});\n\n// Test 6: First name validation\npm.test(\"Verify all firstName fields are strings\", () => {\n    body.users.forEach(user => {\n        pm.expect(user.firstName).to.be.a(\"string\");\n    });\n});\n\n// Test 7: Last name validation\npm.test(\"Verify all lastName fields are strings\", () => {\n    body.users.forEach(user => {\n        pm.expect(user.lastName).to.be.a(\"string\");\n    });\n});\n\n// Test 8: Pagination limit\npm.test(\"Verify pagination limit matches requested limit\", () => {\n    pm.expect(body.limit).to.eql(requestedLimit);\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?limit=3&select=firstName,lastName",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "3"
+                },
+                {
+                  "key": "select",
+                  "value": "firstName,lastName"
+                }
+              ]
+            },
+            "description": "# TC-005 Retrieve 3 Users with Selected Fields\n\nSends a GET request to the `/users` endpoint with `limit=3` and `select=firstName,lastName` query parameters to retrieve 3 users with only the selected name fields and the default user ID.\n\n### Endpoint\n\n`GET {{baseUrl}}/users?limit=3&select=firstName,lastName`\n\n### Query Parameters\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `limit` | `3` | Limits the number of users returned in the response. |\n| `select` | `firstName,lastName` | Specifies the user fields to include in the response. |\n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `users` — an array of user objects (length equal to the requested limit)\n        \n    - `limit` — the pagination limit applied (matches requested limit)\n        \n    - Each user object contains:\n        \n        - `id` — the user's ID (positive integer)\n            \n        - `firstName` — the user's first name (string)\n            \n        - `lastName` — the user's last name (string)\n            \n    - No additional fields within each user object\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. `users` field is an array\n    \n3. Returned user count matches the requested limit (`3`)\n    \n4. Each user contains only the expected fields (`id`, `firstName`, `lastName`)\n    \n5. All user `id` values are positive integers\n    \n6. All `firstName` fields are strings\n    \n7. All `lastName` fields are strings\n    \n8. `limit` in response matches the requested limit (`3`)\n    \n\n### Notes\n\nThe `limit` parameter controls the number of users returned, while the `select` parameter controls the user attributes included in each record."
+          },
+          "response": []
+        }
+      ],
+      "description": "### Overview\n\nThis folder contains API test cases that validate user retrieval, pagination, search functionality, and field selection using GET requests.\n\n### Test Coverage\n\n- **TC-001 - Retrieve 5 Users:** Validates user retrieval with a specified pagination limit.\n    \n- **TC-002 - Retrieve User by ID and Save Data:** Validates individual user retrieval and saves baseline user information for subsequent tests.\n    \n- **TC-003 - Retrieve Users with Pagination:** Validates pagination using `limit` and `skip` query parameters.\n    \n- **TC-004 - Search Users by Keyword:** Validates user search using a predefined keyword.\n    \n- **TC-005 - Retrieve 3 Users with Selected Fields:** Validates field selection and pagination using `limit` and `select` query parameters.\n    \n\n### Key Validations\n\n- HTTP `200 OK` responses\n    \n- User response structure and data types\n    \n- Pagination limit and offset\n    \n- User ID matching\n    \n- Search results and expected user records\n    \n- Selected user attributes\n    \n- Collection variable storage for baseline data\n    \n\n### Notes\n\nTC-002 saves `baselineFirstName` and `baselineLastName` for use in the update test cases."
+    },
+    {
+      "name": "02 - Create User",
+      "item": [
+        {
+          "name": "TC-006 Create user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Clear any previously saved user ID\npm.collectionVariables.unset('simulatedUserId');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst requestBody = JSON.parse(pm.request.body.raw);\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 201 Created\", () => {\n    pm.response.to.have.status(201);\n});\n\n// Test 2: Generated user ID\npm.test(\"Verify created user ID is a positive integer\", () => {\n    pm.expect(body.id).to.be.a(\"number\");\n    pm.expect(Number.isInteger(body.id)).to.be.true;\n    pm.expect(body.id).to.be.above(0);\n});\n\n// Test 3: First name\npm.test(\"Verify returned firstName matches request body\", () => {\n    pm.expect(body.firstName).to.eql(requestBody.firstName);\n});\n\n// Test 4: Last name\npm.test(\"Verify returned lastName matches request body\", () => {\n    pm.expect(body.lastName).to.eql(requestBody.lastName);\n});\n\n// Test 5: Email\npm.test(\"Verify returned email matches request body\", () => {\n    pm.expect(body.email).to.eql(requestBody.email);\n});\n\n// Test 6: Age\npm.test(\"Verify returned age matches request body\", () => {\n    pm.expect(body.age).to.eql(requestBody.age);\n});\n\n// Save the generated ID only when the response is valid\nif (\n    pm.response.code === 201 &&\n    Number.isInteger(body.id) &&\n    body.id > 0\n) {\n    pm.collectionVariables.set(\"simulatedUserId\", String(body.id));\n}\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"QA\",\n  \"lastName\": \"Portfolio\",\n  \"email\": \"qa.portfolio@example.com\",\n  \"age\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "add"
+              ]
+            },
+            "description": "# TC-006 Simulate Creating a User\n\nSends a POST request to the `/users/add` endpoint with user details in the JSON request body to simulate creating a new user and validate the returned user information.\n\n### Endpoint\n\n`POST {{baseUrl}}/users/add`\n\n### Request Body\n\n```\n{\n  \"firstName\": \"QA\",\n  \"lastName\": \"Portfolio\",\n  \"email\": \"qa.portfolio@example.com\",\n  \"age\": 30\n}\n\n ```\n\n### Expected Response\n\n- **Status:** `201 Created`\n    \n- **Body:** A JSON object containing:\n    \n    - `id` — a generated positive integer representing the simulated user\n        \n    - `firstName` — matches the submitted first name\n        \n    - `lastName` — matches the submitted last name\n        \n    - `email` — matches the submitted email address\n        \n    - `age` — matches the submitted age\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `201 Created`\n    \n2. Generated user `id` is a positive integer\n    \n3. Returned `firstName` matches the request body\n    \n4. Returned `lastName` matches the request body\n    \n5. Returned `email` matches the request body\n    \n6. Returned `age` matches the request body\n    \n\n### Collection Variables\n\n| Variable | Description |\n| --- | --- |\n| `simulatedUserId` | Stores the generated user ID for use in TC-007. |\n\nThe variable is cleared before validation and saved only when the response has status `201` and the generated ID is a positive integer.\n\n### Notes\n\nThis endpoint simulates user creation. The generated user is not permanently persisted in the API database.\n\nTC-007 uses the saved `simulatedUserId` to verify that the newly created user cannot be retrieved afterward."
+          },
+          "response": []
+        },
+        {
+          "name": "TC-007 Verify created user is not persisted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const simulatedUserId = pm.collectionVariables.get(\"simulatedUserId\");\n\nif (!simulatedUserId || !Number.isInteger(Number(simulatedUserId)) || Number(simulatedUserId) <= 0) {\n    throw new Error(\"Run TC-006 first to generate a valid simulatedUserId.\");\n}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst simulatedUserId = pm.collectionVariables.get(\"simulatedUserId\");\n\n// Test 1: Required collection variable\npm.test(\"Verify simulatedUserId is available\", () => {\n    pm.expect(simulatedUserId).to.exist;\n    pm.expect(Number.isInteger(Number(simulatedUserId))).to.be.true;\n    pm.expect(Number(simulatedUserId)).to.be.above(0);\n});\n\n// Test 2: HTTP response status\npm.test(\"Verify response status code is 404 Not Found\", () => {\n    pm.response.to.have.status(404);\n});\n\n// Test 3: Error message data type\npm.test(\"Verify error message is a string\", () => {\n    pm.expect(body.message).to.be.a(\"string\");\n});\n\n// Test 4: Error message content\npm.test(\"Verify error message is not empty\", () => {\n    pm.expect(body.message).to.not.be.empty;\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{simulatedUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{simulatedUserId}}"
+              ]
+            },
+            "description": "# TC-007 Verify Created User Is Not Persisted\n\nSends a GET request to the `/users/{{simulatedUserId}}` endpoint using the generated user ID from TC-006 to verify that simulated user creation does not permanently persist data.\n\n### Endpoint\n\n`GET {{baseUrl}}/users/{{simulatedUserId}}`\n\n### Collection Variables\n\n| Variable | Description |\n| --- | --- |\n| `simulatedUserId` | Generated user ID saved during TC-006. |\n\n### Preconditions\n\n- TC-006 has been executed successfully.\n    \n- The `simulatedUserId` collection variable contains a valid positive integer.\n    \n\n### Expected Response\n\n- **Status:** `404 Not Found`\n    \n- **Body:** A JSON object containing:\n    \n    - `message` — a non-empty string describing the error\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. `simulatedUserId` collection variable is available and contains a valid positive integer\n    \n2. Response status code is `404 Not Found`\n    \n3. Error `message` is a string\n    \n4. Error `message` is not empty\n    \n\n### Notes\n\nDummyJSON simulates user creation without permanently adding the new user to its database.\n\nThis test confirms that the simulated user cannot be retrieved afterward.\n\nTC-007 intentionally depends on TC-006 because it validates the result of the preceding simulated creation operation."
+          },
+          "response": []
+        }
+      ],
+      "description": "### Overview\n\nThis folder contains API test cases that validate simulated user creation and verify that newly created users are not permanently persisted in the DummyJSON database.\n\n### Test Coverage\n\n- **TC-006 - Simulate Creating a User:** Validates the creation response, generated user ID, and returned user information.\n    \n- **TC-007 - Verify Created User Is Not Persisted:** Validates that the simulated user cannot be retrieved afterward.\n    \n\n### Key Validations\n\n- HTTP `201 Created` response\n    \n- Generated user ID validation\n    \n- Request and response data consistency\n    \n- HTTP `404 Not Found` response\n    \n- Error message validation\n    \n- Collection variable handling\n    \n\n### Preconditions and Dependencies\n\nTC-007 requires TC-006 to execute successfully and save the generated `simulatedUserId`.\n\n### Notes\n\nDummyJSON simulates user creation without permanently storing the new record."
+    },
+    {
+      "name": "03 - Update User",
+      "item": [
+        {
+          "name": "TC-008 Update existing user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baselineFirstName = pm.collectionVariables.get(\"baselineFirstName\");\nconst testUserId = pm.collectionVariables.get(\"testUserId\");\n\nif (!baselineFirstName || !testUserId) {\n    console.warn(\"BLOCKED: Run TC-001 and TC-002 first.\");\n    pm.execution.skipRequest();\n}\n"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst requestBody = JSON.parse(pm.request.body.raw);\n\nconst requestedUserId = pm.collectionVariables.get(\"testUserId\");\nconst baselineFirstName = pm.collectionVariables.get(\"baselineFirstName\");\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User ID\npm.test(\"Verify returned user ID matches requested ID\", () => {\n    pm.expect(body.id).to.eql(requestedUserId);\n});\n\n// Test 3: Updated last name\npm.test(\"Verify lastName matches the requested update\", () => {\n    pm.expect(body.lastName).to.eql(requestBody.lastName);\n});\n\n// Test 4: Original first name is available\npm.test(\"Verify baselineFirstName collection variable is available\", () => {\n    pm.expect(baselineFirstName).to.be.a(\"string\").and.not.empty;\n});\n\n// Test 5: Unchanged first name\npm.test(\"Verify firstName remains unchanged\", () => {\n    pm.expect(body.firstName).to.eql(baselineFirstName);\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lastName\": \"QA-Updated\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{testUserId}}"
+                }
+              ]
+            },
+            "description": "# TC-008 Update an Existing User\n\nSends a PATCH request to the `/users/:id` endpoint to simulate updating an existing user's last name while verifying that the user's first name remains unchanged.\n\n### Endpoint\n\n`PATCH {{baseUrl}}/users/:id`\n\n### Request Body\n\n```\n{\n  \"lastName\": \"QA-Updated\"\n}\n\n ```\n\n### Preconditions\n\n- TC-002 has been executed successfully.\n    \n- The `baselineFirstName` collection variable contains the user's original first name.\n    \n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `id` — matches the requested user ID (`testUserId`)\n        \n    - `firstName` — matches the original first name saved by TC-002\n        \n    - `lastName` — matches the updated last name submitted in the request body\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. Returned user `id` matches the requested ID (`testUserId`)\n    \n3. Returned `lastName` matches the requested update\n    \n4. `baselineFirstName` collection variable is available and contains a non-empty string\n    \n5. Returned `firstName` remains unchanged from the original value\n    \n\n### Collection Variables\n\n| Variable | Description |\n| --- | --- |\n| `baselineFirstName` | Stores the user's original first name from TC-002 for comparison. |\n\n### Notes\n\nDummyJSON simulates user updates without permanently modifying the stored record.\n\nThis test validates the immediate response to a partial update request. TC-009 will verify that the simulated update was not persisted."
+          },
+          "response": []
+        },
+        {
+          "name": "TC-009 Verify updated user is not persisted",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const baselineLastName = pm.collectionVariables.get(\"baselineLastName\");\nconst testUserId = pm.collectionVariables.get(\"testUserId\");\n\n\nif (!baselineLastName || !testUserId) {\n    console.warn(\"BLOCKED: Run TC-002 first to save baselineLastName.\");\n    pm.execution.skipRequest();\n}\n"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst baselineLastName = pm.collectionVariables.get(\"baselineLastName\");\nconst testUserId = pm.collectionVariables.get(\"testUserId\");\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User ID\npm.test(\"Verify returned user ID matches requested ID\", () => {\n    pm.expect(body.id).to.eql(testUserId);\n});\n\n// Test 3: Original last name\npm.test(\"Verify lastName matches the original baseline\", () => {\n    pm.expect(body.lastName).to.eql(baselineLastName);\n});\n\n// Test 4: Updated value was not persisted\npm.test(\"Verify simulated lastName update was not persisted\", () => {\n    pm.expect(body.lastName).to.not.eql(\"QA-Updated\");\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{testUserId}}"
+                }
+              ]
+            },
+            "description": "# TC-009 Verify Updated User Is Not Persisted\n\nSends a GET request to the `/users/:id` endpoint after a simulated PATCH update to verify that the user's original last name remains unchanged and that the update was not permanently saved.\n\n### Endpoint\n\n`GET {{baseUrl}}/users/:id`\n\n### Preconditions\n\n- TC-002 has been executed successfully to save the original last name.\n    \n- TC-008 has been executed successfully to simulate updating the user's last name.\n    \n- The `baselineLastName` collection variable contains the original last name.\n    \n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `id` — matches the requested user ID (`testUserId`)\n        \n    - `lastName` — matches the original last name saved by TC-002\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. Returned user `id` matches the requested ID (`testUserId`)\n    \n3. Returned `lastName` matches the original baseline value\n    \n4. Simulated lastName update was not persisted\n    \n\n### Collection Variables\n\n| Variable | Description |\n| --- | --- |\n| `baselineLastName` | Stores the user's original last name from TC-002 for comparison. |\n\n### Notes\n\nDummyJSON simulates user updates without permanently modifying the stored record.\n\nThe pre-request script skips TC-009 when `baselineLastName` is unavailable.\n\nThis test should be executed after TC-008 to validate that the simulated update was not persisted."
+          },
+          "response": []
+        }
+      ],
+      "description": "# Overview\n\nThis folder contains API test cases that validate simulated partial updates to an existing user and verify that the updated information is not permanently persisted.\n\n### Test Coverage\n\n- **TC-008 - Update Existing User:** Validates that the PATCH request updates the specified last name while preserving the unchanged first name.\n    \n- **TC-009 - Verify Updated User Is Not Persisted:** Validates that the user's original last name remains unchanged after the simulated update.\n    \n\n### Key Validations\n\n- HTTP `200 OK` responses\n    \n- User ID matching\n    \n- Updated field matching the request body\n    \n- Preservation of unchanged attributes\n    \n- Original user information after the update\n    \n- Collection variable validation\n    \n\n### Preconditions and Dependencies\n\n- TC-002 saves the original user information.\n    \n- TC-008 uses `baselineFirstName`.\n    \n- TC-009 uses `baselineLastName`.\n    \n- TC-009 should execute after TC-008.\n    \n\n### Notes\n\nDummyJSON simulates user updates without permanently modifying stored records."
+    },
+    {
+      "name": "04 - Delete User",
+      "item": [
+        {
+          "name": "TC-010 Delete user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst requestedUserId = pm.collectionVariables.get(\"testUserId\");\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: Deleted user ID\npm.test(\"Verify returned user ID matches requested ID\", () => {\n    pm.expect(body.id).to.eql(requestedUserId);\n});\n\n// Test 3: Deletion status\npm.test(\"Verify isDeleted is true\", () => {\n    pm.expect(body.isDeleted).to.eql(true);\n});\n\n// Test 4: Deletion timestamp\npm.test(\"Verify deletedOn is a valid timestamp\", () => {\n    pm.expect(body.deletedOn).to.be.a(\"string\").and.not.empty;\n    pm.expect(Number.isNaN(Date.parse(body.deletedOn))).to.be.false;\n});\n"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const testUserId = pm.collectionVariables.get(\"testUserId\");\n\nif (!testUserId) {\n    console.warn(\"BLOCKED: Run TC-001 first to save testUserId.\");\n    pm.execution.skipRequest();\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{testUserId}}"
+                }
+              ]
+            },
+            "description": "# TC-010 Simulate Deleting an Existing User\n\nSends a DELETE request to the `/users/:id` endpoint to simulate deleting an existing user and verify that the response confirms the deletion with the correct user ID, deletion status, and timestamp.\n\n### Endpoint\n\n`DELETE {{baseUrl}}/users/:id`\n\n### Path Variables\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `id` | `{{testUserId}}` | Specifies the ID of the user to delete. |\n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `id` — matches the requested user ID (`testUserId`)\n        \n    - `isDeleted` — boolean value `true`, indicating simulated deletion\n        \n    - `deletedOn` — a non-empty, parseable deletion timestamp\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. Returned user `id` matches the requested ID (`{{testUserId}}`)\n    \n3. `isDeleted` equals `true`\n    \n4. `deletedOn` is a non-empty string containing a valid, parseable timestamp\n    \n\n### Preconditions\n\n- The requested user ID exists in the API.\n    \n\n### Notes\n\nDummyJSON simulates user deletion without permanently removing the record from its database.\n\nThis test validates the immediate DELETE response.\n\nTC-011 will retrieve the same user afterward to verify that the simulated deletion was not persisted."
+          },
+          "response": []
+        },
+        {
+          "name": "TC-011 Verify deleted user is not persisted",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\nconst requestedUserId = pm.collectionVariables.get(\"testUserId\");\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 200 OK\", () => {\n    pm.response.to.have.status(200);\n});\n\n// Test 2: User ID\npm.test(\"Verify returned user ID matches requested ID\", () => {\n    pm.expect(body.id).to.eql(requestedUserId);\n});\n\n// Test 3: First name\npm.test(\"Verify firstName is a non-empty string\", () => {\n    pm.expect(body.firstName).to.be.a(\"string\").and.not.empty;\n});\n\n// Test 4: Last name\npm.test(\"Verify lastName is a non-empty string\", () => {\n    pm.expect(body.lastName).to.be.a(\"string\").and.not.empty;\n});\n"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const testUserId = pm.collectionVariables.get(\"testUserId\");\n\nif (!testUserId) {\n    console.warn(\"BLOCKED: Run TC-001 first to save testUserId.\");\n    pm.execution.skipRequest();\n}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{testUserId}}"
+                }
+              ]
+            },
+            "description": "# TC-011 Verify Deleted User Is Not Persisted\n\nSends a GET request to the `/users/:id` endpoint after a simulated DELETE operation to verify that the user remains retrievable and was not permanently removed from the API database.\n\n### Endpoint\n\n`GET {{baseUrl}}/users/:id`\n\n### Path Variables\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `id` | `{{testUserId}}` | Specifies the ID of the user previously used in the simulated deletion. |\n\n### Preconditions\n\n- TC-010 has been executed successfully to simulate deleting user ID `testUserId`.\n    \n- The same user ID is used for both TC-010 and TC-011.\n    \n\n### Expected Response\n\n- **Status:** `200 OK`\n    \n- **Body:** A JSON object containing:\n    \n    - `id` — matches the requested user ID (`{{testUserId}}`)\n        \n    - `firstName` — a non-empty string\n        \n    - `lastName` — a non-empty string\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `200 OK`\n    \n2. Returned user `id` matches the requested ID (`{{testUserId}}`)\n    \n3. `firstName` is a non-empty string\n    \n4. `lastName` is a non-empty string\n    \n\n### Notes\n\nDummyJSON simulates user deletion without permanently removing the record from its database.\n\nTC-011 verifies that the user remains retrievable after the simulated DELETE request.\n\nThis test does not require collection variables from TC-002, but it should execute after TC-010 to demonstrate the deletion and retrieval workflow."
+          },
+          "response": []
+        }
+      ],
+      "description": "# Overview\n\nThis folder contains API test cases that validate simulated user deletion and verify that the user remains retrievable afterward.\n\n### Test Coverage\n\n- **TC-010 - Delete User:** Validates the simulated deletion response, user ID, deletion status, and timestamp.\n    \n- **TC-011 - Verify Deleted User Is Not Persisted:** Validates that the same user can still be retrieved after the simulated deletion.\n    \n\n### Key Validations\n\n- HTTP `200 OK` responses\n    \n- User ID matching\n    \n- `isDeleted` equals `true`\n    \n- Valid deletion timestamp\n    \n- Successful retrieval after deletion\n    \n- User attribute validation\n    \n\n### Preconditions and Dependencies\n\nTC-011 should execute after TC-010 using the same user ID.\n\n### Notes\n\nDummyJSON simulates deletion without permanently removing the user from its database."
+    },
+    {
+      "name": "05 - Negative Testing",
+      "item": [
+        {
+          "name": "TC-012 Retrieve nonexistent user ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();\n// Grabs the segment right after \"users\" automatically from your actual URL text\nconst requestedUserId = Number(pm.request.url.path[1]);\n\n// Test 1: HTTP response status\npm.test(\"Verify response status code is 404 Not Found\", () => {\n    pm.response.to.have.status(404);\n});\n\n// Test 2: Error message data type\npm.test(\"Verify error message is a string\", () => {\n    pm.expect(body.message).to.be.a(\"string\");\n});\n\n// Test 3: Error message content\npm.test(\"Verify error message is not empty\", () => {\n    pm.expect(body.message).to.be.a(\"string\").and.not.empty;\n});\n\n// Test 4: Error message references requested user ID\npm.test(\"Verify error message references the requested user ID\", () => {\n    pm.expect(body.message).to.include(requestedUserId);\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "999999999"
+                }
+              ]
+            },
+            "description": "# TC-012 Retrieve a Nonexistent User\n\nSends a GET request to the `/users/:id` endpoint using a nonexistent user ID to verify that the API handles invalid resource requests correctly and returns an appropriate error response.\n\n### Endpoint\n\n`GET {{baseUrl}}/users/:id`\n\n### Path Variables\n\n| Parameter | Value | Description |\n| --- | --- | --- |\n| `id` | `999999999` | Specifies a user ID that does not exist in the database. |\n\n### Expected Response\n\n- **Status:** `404 Not Found`\n    \n- **Body:** A JSON object containing:\n    \n    - `message` — a non-empty string describing the error\n        \n    - The error message identifies the requested nonexistent user ID\n        \n\n### Validations\n\nThis request verifies the following:\n\n1. Response status code is `404 Not Found`\n    \n2. Error `message` is a string\n    \n3. Error `message` is not empty\n    \n4. Error `message` references the requested user ID (`999999999`)\n    \n\n### Preconditions\n\n- The requested user ID does not exist in the API database.\n    \n\n### Notes\n\nThis is a negative test case designed to validate error handling for a nonexistent resource.\n\nA `404 Not Found` response is the expected outcome and represents a successful test when the API behaves according to its contract.\n\nThis test runs independently and does not require data or collection variables from previous test cases."
+          },
+          "response": []
+        }
+      ],
+      "description": "### Overview\n\nThis folder contains negative API test cases that validate error handling when requesting resources that do not exist.\n\n### Test Coverage\n\n- **TC-012 - Retrieve Nonexistent User ID:** Validates the API response when retrieving a user with an invalid or nonexistent ID.\n    \n\n### Key Validations\n\n- HTTP `404 Not Found` response\n    \n- Error response structure\n    \n- Error message data type\n    \n- Non-empty error message\n    \n- Error message references the requested user ID\n    \n\n### Preconditions and Dependencies\n\nThe requested user ID must not exist in the database. This test runs independently.\n\n### Notes\n\nA `404 Not Found` response is the expected result and indicates successful negative testing when the API behaves according to its documented contract."
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://dummyjson.com"
+    },
+    {
+      "key": "simulatedUserId",
+      "value": ""
+    },
+    {
+      "key": "testUserId",
+      "value": ""
+    },
+    {
+      "key": "baselineFirstName",
+      "value": ""
+    },
+    {
+      "key": "baselineLastName",
+      "value": ""
+    }
+  ]
+}
