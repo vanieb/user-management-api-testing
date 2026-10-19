@@ -26,12 +26,11 @@ The project includes 12 test cases with 63 automated assertions, covering CRUD o
 
 ## Setup and Execution
 
-1. Import your exported Postman collection JSON into Postman.
+1. Import exported Postman collection JSON into Postman.
 2. Set collection variable `baseUrl` to `https://dummyjson.com`.
 3. No authentication is required.
 4. Run all 12 requests **in collection order**, using one iteration in Collection Runner.
-5. Inspect passed, failed, and skipped requests. Record actual results before publishing execution claims.
-
+ 
 **Dependencies:** TC-002 provides baseline names for TC-008 and TC-009. TC-006 provides `simulatedUserId` for TC-007. Run TC-010 before TC-011 using the same user ID.
 
 **API limitation:** DummyJSON simulates create, update, and delete responses without permanently modifying its user database. The follow-up tests verify this documented behavior.
