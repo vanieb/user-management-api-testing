@@ -1,0 +1,38 @@
+
+name: Postman API Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Newman
+        run: npm install --global newman
+
+      - name: Run Postman API tests
+        run: |
+          mkdir -p reports
+          newman run "user-management.postman_collection.json" \
+            --reporters cli,junit \
+            --reporter-junit-export reports/newman-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-test-results
+          path: reports/
+          if-no-files-found: warn
